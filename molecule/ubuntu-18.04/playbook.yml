@@ -62,7 +62,7 @@
     - role: minikube
     - role: kubernetes-addon-manager
     - role: kubernetes-flannel
-      - role: kubernetes-csi-cephfs
+    - role: kubernetes-csi-cephfs
       csi_cephfs_monitors: >-
         {%- for host in groups['ceph-mon'] -%}
         {{ hostvars[host]['ansible_default_ipv4']['address'] }}:6789,
