@@ -51,3 +51,13 @@ csi_cephfs_admin_secret: ~
 csi_cephfs_config:
   - clusterID: "csi-cephfs"
     monitors: "{{ csi_cephfs_monitors.split(',') | select() | list() }}"
+
+# StorageClass parameters.
+csi_cephfs_parameters:
+  clusterID: "csi-cephfs"
+  fsName: "cephfs"
+  pool: "cephfs_data"
+  csi.storage.k8s.io/provisioner-secret-name: "csi-cephfs-secret"
+  csi.storage.k8s.io/provisioner-secret-namespace: "csi-cephfs"
+  csi.storage.k8s.io/node-stage-secret-name: "csi-cephfs-secret"
+  csi.storage.k8s.io/node-stage-secret-namespace: "csi-cephfs"
