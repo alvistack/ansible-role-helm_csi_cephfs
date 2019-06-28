@@ -278,7 +278,7 @@ spec:
           image: {{ csi_provisioner_image_repository }}/csi-provisioner:{{ csi_provisioner_version }}
           args:
             - --v=5
-            - --csi-address=/csi/csi.sock
+            - --csi-address=/csi/csi-provisioner.sock
           volumeMounts:
             - name: socket-dir
               mountPath: /csi
@@ -286,7 +286,7 @@ spec:
           image: {{ csi_attacher_image_repository }}/csi-attacher:{{ csi_attacher_version }}
           args:
             - --v=5
-            - --csi-address=/csi/csi.sock
+            - --csi-address=/csi/csi-provisioner.sock
             - --connection-timeout=15s
           volumeMounts:
             - name: socket-dir
@@ -314,7 +314,7 @@ spec:
                 fieldRef:
                   fieldPath: metadata.namespace
             - name: CSI_ENDPOINT
-              value: unix:///csi/csi.sock
+              value: unix:///csi/csi-provisioner.sock
           volumeMounts:
             - name: socket-dir
               mountPath: /csi
