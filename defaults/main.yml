@@ -26,6 +26,12 @@ csi_attacher_version: "v1.2.0"
 # ImageRepository sets the container registry to pull images from.
 csi_attacher_image_repository: "quay.io/k8scsi"
 
+# csi-snapshotter version.
+csi_snapshotter_version: "v1.2.0"
+
+# ImageRepository sets the container registry to pull images from.
+csi_snapshotter_image_repository: "quay.io/k8scsi"
+
 # csi-node-drive-registrar version.
 csi_node_drive_registrar_version: "v1.1.0"
 
@@ -49,5 +55,15 @@ csi_cephfs_admin_secret: ~
 
 # /etc/ceph-csi-config/config.json.
 csi_cephfs_config:
-  - clusterID: "csi-cephfs"
+  - clusterID: "ceph"
     monitors: "{{ csi_cephfs_monitors.split(',') | select() | list() }}"
+
+# StorageClass parameters.
+csi_cephfs_parameters:
+  clusterID: "ceph"
+  fsName: "cephfs"
+  pool: "cephfs_data"
+  csi.storage.k8s.io/provisioner-secret-name: "csi-cephfs-secret"
+  csi.storage.k8s.io/provisioner-secret-namespace: "csi-cephfs"
+  csi.storage.k8s.io/node-stage-secret-name: "csi-cephfs-secret"
+  csi.storage.k8s.io/node-stage-secret-namespace: "csi-cephfs"
