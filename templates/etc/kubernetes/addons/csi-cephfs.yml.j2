@@ -278,7 +278,12 @@ spec:
           image: {{ csi_provisioner_image_repository }}/csi-provisioner:{{ csi_provisioner_version }}
           args:
             - --v=5
-            - --csi-address=/csi/csi-provisioner.sock
+            - --csi-address=$(ADDRESS)
+            - --timeout=60s
+            - --retry-interval-start=500ms
+          env:
+            - name: ADDRESS
+              value: unix:///csi/csi-provisioner.sock
           volumeMounts:
             - name: socket-dir
               mountPath: /csi
@@ -286,8 +291,10 @@ spec:
           image: {{ csi_attacher_image_repository }}/csi-attacher:{{ csi_attacher_version }}
           args:
             - --v=5
-            - --csi-address=/csi/csi-provisioner.sock
-            - --connection-timeout=15s
+            - --csi-address=$(ADDRESS)
+          env:
+            - name: ADDRESS
+              value: /csi/csi-provisioner.sock
           volumeMounts:
             - name: socket-dir
               mountPath: /csi
@@ -300,12 +307,12 @@ spec:
           args:
             - --v=5
             - --type=cephfs
-            - --nodeid=$(KUBE_NODE_NAME)
+            - --nodeid=$(NODE_ID)
             - --endpoint=$(CSI_ENDPOINT)
             - --drivername=cephfs.csi.ceph.com
             - --metadatastorage=k8s_configmap
           env:
-            - name: KUBE_NODE_NAME
+            - name: NODE_ID
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
@@ -402,13 +409,13 @@ spec:
           args:
             - --v=5
             - --type=cephfs
-            - --nodeid=$(KUBE_NODE_NAME)
+            - --nodeid=$(NODE_ID)
             - --endpoint=$(CSI_ENDPOINT)
             - --drivername=cephfs.csi.ceph.com
             - --metadatastorage=k8s_configmap
             - --mountcachedir=/mount-cache-dir
           env:
-            - name: KUBE_NODE_NAME
+            - name: NODE_ID
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
@@ -419,6 +426,8 @@ spec:
             - name: CSI_ENDPOINT
               value: unix:///csi/csi.sock
           volumeMounts:
+            - name: mount-cache-dir
+              mountPath: /mount-cache-dir
             - name: plugin-dir
               mountPath: /csi
             - name: csi-plugins-dir
@@ -436,9 +445,9 @@ spec:
               mountPath: /dev
             - name: ceph-csi-config
               mountPath: /etc/ceph-csi-config
-            - name: mount-cache-dir
-              mountPath: /mount-cache-dir
       volumes:
+        - name: mount-cache-dir
+          emptyDir: {}
         - name: plugin-dir
           hostPath:
             path: /var/lib/kubelet/plugins/cephfs.csi.ceph.com
@@ -467,5 +476,3 @@ spec:
         - name: ceph-csi-config
           configMap:
             name: ceph-csi-config
-        - name: mount-cache-dir
-          emptyDir: {}
