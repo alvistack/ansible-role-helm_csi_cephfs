@@ -82,13 +82,13 @@ rules:
     verbs: ["get", "list", "watch"]
   - apiGroups: [""]
     resources: ["secrets"]
-    verbs: ["get", "list"]
+    verbs: ["get", "create", "delete"]
   - apiGroups: [""]
     resources: ["events"]
     verbs: ["list", "watch", "create", "update", "patch"]
   - apiGroups: [""]
     resources: ["persistentvolumes"]
-    verbs: ["get", "list", "watch", "create", "delete"]
+    verbs: ["get", "list", "watch", "create", "update", "delete"]
   - apiGroups: [""]
     resources: ["persistentvolumeclaims"]
     verbs: ["get", "list", "watch", "update"]
@@ -132,11 +132,14 @@ metadata:
     addonmanager.kubernetes.io/mode: Reconcile
 rules:
   - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "create", "delete"]
+  - apiGroups: [""]
     resources: ["endpoints"]
     verbs: ["get", "watch", "list", "delete", "update", "create"]
   - apiGroups: [""]
     resources: ["configmaps"]
-    verbs: ["get", "list", "create", "delete"]
+    verbs: ["get", "list", "watch", "create", "delete"]
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -180,8 +183,8 @@ metadata:
     addonmanager.kubernetes.io/mode: Reconcile
 rules:
   - apiGroups: [""]
-    resources: ["configmaps"]
-    verbs: ["get", "list"]
+    resources: ["secrets"]
+    verbs: ["get", "create", "delete"]
   - apiGroups: [""]
     resources: ["nodes"]
     verbs: ["get", "list", "update"]
@@ -194,6 +197,9 @@ rules:
   - apiGroups: ["storage.k8s.io"]
     resources: ["volumeattachments"]
     verbs: ["get", "list", "watch", "update"]
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "list"]
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
