@@ -232,7 +232,7 @@ provisioner: cephfs.csi.ceph.com
 {% if csi_cephfs_parameters %}
 parameters:
   {{ csi_cephfs_parameters | to_nice_yaml(indent=2) | indent(2) }}
-{%- endif %}
+{% endif %}
 
 ---
 apiVersion: v1
