@@ -70,19 +70,34 @@ metadata:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: csi-cephfs-provisioner
-  namespace: csi-cephfs
+  name: cephfs-external-provisioner-runner
   labels:
     app.kubernetes.io/name: csi-cephfs
     app.kubernetes.io/part-of: csi-cephfs
     addonmanager.kubernetes.io/mode: Reconcile
+aggregationRule:
+  clusterRoleSelectors:
+    - matchLabels:
+        rbac.cephfs.csi.ceph.com/aggregate-to-cephfs-external-provisioner-runner: "true"
+rules: []
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cephfs-external-provisioner-runner-rules
+  labels:
+    app.kubernetes.io/name: csi-cephfs
+    app.kubernetes.io/part-of: csi-cephfs
+    addonmanager.kubernetes.io/mode: Reconcile
+    rbac.cephfs.csi.ceph.com/aggregate-to-cephfs-external-provisioner-runner: "true"
 rules:
   - apiGroups: [""]
     resources: ["nodes"]
     verbs: ["get", "list", "watch"]
   - apiGroups: [""]
     resources: ["secrets"]
-    verbs: ["get", "create", "delete"]
+    verbs: ["get", "list"]
   - apiGroups: [""]
     resources: ["events"]
     verbs: ["list", "watch", "create", "update", "patch"]
@@ -117,14 +132,14 @@ subjects:
     namespace: csi-cephfs
 roleRef:
   kind: ClusterRole
-  name: csi-cephfs-provisioner
+  name: cephfs-external-provisioner-runner
   apiGroup: rbac.authorization.k8s.io
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: csi-cephfs-provisioner
+  name: cephfs-external-provisioner-cfg
   namespace: csi-cephfs
   labels:
     app.kubernetes.io/name: csi-cephfs
@@ -132,14 +147,14 @@ metadata:
     addonmanager.kubernetes.io/mode: Reconcile
 rules:
   - apiGroups: [""]
-    resources: ["secrets"]
-    verbs: ["get", "create", "delete"]
-  - apiGroups: [""]
     resources: ["endpoints"]
     verbs: ["get", "watch", "list", "delete", "update", "create"]
   - apiGroups: [""]
     resources: ["configmaps"]
     verbs: ["get", "list", "watch", "create", "delete"]
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["get", "watch", "list", "delete", "update", "create"]
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -157,7 +172,7 @@ subjects:
     namespace: csi-cephfs
 roleRef:
   kind: Role
-  name: csi-cephfs-provisioner
+  name: cephfs-external-provisioner-cfg
   apiGroup: rbac.authorization.k8s.io
 
 ---
@@ -176,15 +191,30 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: csi-cephfs-nodeplugin
-  namespace: csi-cephfs
   labels:
     app.kubernetes.io/name: csi-cephfs
     app.kubernetes.io/part-of: csi-cephfs
     addonmanager.kubernetes.io/mode: Reconcile
+aggregationRule:
+  clusterRoleSelectors:
+    - matchLabels:
+        rbac.cephfs.csi.ceph.com/aggregate-to-csi-cephfs-nodeplugin: "true"
+rules: []
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: csi-cephfs-nodeplugin-rules
+  labels:
+    app.kubernetes.io/name: csi-cephfs
+    app.kubernetes.io/part-of: csi-cephfs
+    addonmanager.kubernetes.io/mode: Reconcile
+    rbac.cephfs.csi.ceph.com/aggregate-to-csi-cephfs-nodeplugin: "true"
 rules:
   - apiGroups: [""]
     resources: ["secrets"]
-    verbs: ["get", "create", "delete"]
+    verbs: ["get", "list"]
   - apiGroups: [""]
     resources: ["nodes"]
     verbs: ["get", "list", "update"]
@@ -232,7 +262,7 @@ provisioner: cephfs.csi.ceph.com
 {% if csi_cephfs_parameters %}
 parameters:
   {{ csi_cephfs_parameters | to_nice_yaml(indent=2) | indent(2) }}
-{%- endif %}
+{% endif %}
 
 ---
 apiVersion: v1
@@ -250,12 +280,18 @@ spec:
     app.kubernetes.io/part-of: csi-cephfs
     addonmanager.kubernetes.io/mode: Reconcile
   ports:
-    - name: dummy
-      port: 12345
+    - name: http-metrics
+      port: 8080
+      protocol: TCP
+      targetPort: 8081
+    - name: grpc-metrics
+      port: 8090
+      protocol: TCP
+      targetPort: 8091
 
 ---
 apiVersion: apps/v1
-kind: StatefulSet
+kind: Deployment
 metadata:
   name: csi-cephfs-provisioner
   namespace: csi-cephfs
@@ -264,7 +300,6 @@ metadata:
     app.kubernetes.io/part-of: csi-cephfs
     addonmanager.kubernetes.io/mode: Reconcile
 spec:
-  serviceName: csi-cephfs-provisioner
   replicas: 1
   selector:
     matchLabels:
@@ -287,6 +322,8 @@ spec:
             - --csi-address=$(ADDRESS)
             - --timeout=60s
             - --retry-interval-start=500ms
+            - --enable-leader-election=true
+            - --leader-election-type=leases
           env:
             - name: ADDRESS
               value: unix:///csi/csi-provisioner.sock
@@ -298,6 +335,8 @@ spec:
           args:
             - --v=5
             - --csi-address=$(ADDRESS)
+            - --leader-election=true
+            - --leader-election-type=leases
           env:
             - name: ADDRESS
               value: /csi/csi-provisioner.sock
@@ -316,8 +355,17 @@ spec:
             - --nodeid=$(NODE_ID)
             - --endpoint=$(CSI_ENDPOINT)
             - --drivername=cephfs.csi.ceph.com
+            - --controllerserver=true
+            - --pidlimit=-1
+            - --metricsport=8091
+            - --metricspath=/metrics
+            - --enablegrpcmetrics=false
             - --metadatastorage=k8s_configmap
           env:
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
             - name: NODE_ID
               valueFrom:
                 fieldRef:
@@ -331,32 +379,86 @@ spec:
           volumeMounts:
             - name: socket-dir
               mountPath: /csi
+            - name: host-dev
+              mountPath: /dev
+            - name: host-rootfs
+              mountPath: /rootfs
             - name: host-sys
               mountPath: /sys
             - name: lib-modules
               mountPath: /lib/modules
               readOnly: true
-            - name: host-dev
-              mountPath: /dev
             - name: ceph-csi-config
               mountPath: /etc/ceph-csi-config
+            - name: keys-tmp-dir
+              mountPath: /tmp/csi/keys
+        - name: liveness-prometheus
+          image: {{ csi_cephfsplugin_image_repository }}/cephcsi:{{ csi_cephfsplugin_version }}
+          args:
+            - --type=liveness
+            - --endpoint=$(CSI_ENDPOINT)
+            - --metricsport=8081
+            - --metricspath=/metrics
+            - --polltime=60s
+            - --timeout=3s
+          env:
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: CSI_ENDPOINT
+              value: unix:///csi/csi-provisioner.sock
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /csi
       volumes:
-        - name: socket-dir
+        - name: host-dev
           hostPath:
-            path: /var/lib/kubelet/plugins/cephfs.csi.ceph.com
-            type: DirectoryOrCreate
+            path: /dev
+        - name: host-rootfs
+          hostPath:
+            path: /
         - name: host-sys
           hostPath:
             path: /sys
         - name: lib-modules
           hostPath:
             path: /lib/modules
-        - name: host-dev
+        - name: socket-dir
           hostPath:
-            path: /dev
+            path: /var/lib/kubelet/plugins/cephfs.csi.ceph.com
+            type: DirectoryOrCreate
         - name: ceph-csi-config
           configMap:
             name: ceph-csi-config
+        - name: keys-tmp-dir
+          emptyDir:
+            medium: Memory
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: csi-cephfsplugin
+  namespace: csi-cephfs
+  labels:
+    app.kubernetes.io/name: csi-cephfsplugin
+    app.kubernetes.io/part-of: csi-cephfs
+    addonmanager.kubernetes.io/mode: Reconcile
+spec:
+  selector:
+    app.kubernetes.io/name: csi-cephfsplugin
+    app.kubernetes.io/part-of: csi-cephfs
+    addonmanager.kubernetes.io/mode: Reconcile
+  ports:
+    - name: http-metrics
+      port: 8080
+      protocol: TCP
+      targetPort: 8081
+    - name: grpc-metrics
+      port: 8090
+      protocol: TCP
+      targetPort: 8091
 
 ---
 apiVersion: apps/v1
@@ -383,25 +485,26 @@ spec:
     spec:
       serviceAccountName: csi-cephfs-nodeplugin
       hostNetwork: true
+      hostPID: true
       dnsPolicy: ClusterFirstWithHostNet
       containers:
         - name: driver-registrar
           image: {{ csi_node_drive_registrar_image_repository }}/csi-node-driver-registrar:{{ csi_node_drive_registrar_version }}
-          lifecycle:
-            preStop:
-              exec:
-                command: ["/bin/sh", "-c", "rm -rf /registration/cephfs.csi.ceph.com /registration/cephfs.csi.ceph.com-reg.sock"]
           args:
             - --v=5
             - --csi-address=/csi/csi.sock
             - --kubelet-registration-path=/var/lib/kubelet/plugins/cephfs.csi.ceph.com/csi.sock
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", "rm -rf /registration/cephfs.csi.ceph.com /registration/cephfs.csi.ceph.com-reg.sock"]
           env:
             - name: KUBE_NODE_NAME
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
           volumeMounts:
-            - name: plugin-dir
+            - name: socket-dir
               mountPath: /csi
             - name: registration-dir
               mountPath: /registration
@@ -418,9 +521,17 @@ spec:
             - --nodeid=$(NODE_ID)
             - --endpoint=$(CSI_ENDPOINT)
             - --drivername=cephfs.csi.ceph.com
+            - --nodeserver=true
+            - --metricsport=8090
+            - --metricspath=/metrics
+            - --enablegrpcmetrics=false
             - --metadatastorage=k8s_configmap
             - --mountcachedir=/mount-cache-dir
           env:
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
             - name: NODE_ID
               valueFrom:
                 fieldRef:
@@ -432,53 +543,77 @@ spec:
             - name: CSI_ENDPOINT
               value: unix:///csi/csi.sock
           volumeMounts:
-            - name: mount-cache-dir
-              mountPath: /mount-cache-dir
-            - name: plugin-dir
+            - name: socket-dir
               mountPath: /csi
-            - name: csi-plugins-dir
-              mountPath: /var/lib/kubelet/plugins/kubernetes.io/csi
-              mountPropagation: Bidirectional
-            - name: pods-mount-dir
-              mountPath: /var/lib/kubelet/pods
-              mountPropagation: Bidirectional
+            - name: host-dev
+              mountPath: /dev
             - name: host-sys
               mountPath: /sys
             - name: lib-modules
               mountPath: /lib/modules
               readOnly: true
-            - name: host-dev
-              mountPath: /dev
+            - name: mountpoint-dir
+              mountPath: /var/lib/kubelet/pods
+              mountPropagation: Bidirectional
+            - name: plugin-dir
+              mountPath: /var/lib/kubelet/plugins
+              mountPropagation: Bidirectional
             - name: ceph-csi-config
               mountPath: /etc/ceph-csi-config
+            - name: keys-tmp-dir
+              mountPath: /tmp/csi/keys
+            - name: mount-cache-dir
+              mountPath: /mount-cache-dir
+        - name: liveness-prometheus
+          image: {{ csi_cephfsplugin_image_repository }}/cephcsi:{{ csi_cephfsplugin_version }}
+          args:
+            - --type=liveness
+            - --endpoint=$(CSI_ENDPOINT)
+            - --metricsport=8081
+            - --metricspath=/metrics
+            - --polltime=60s
+            - --timeout=3s
+          env:
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: CSI_ENDPOINT
+              value: unix:///csi/csi.sock
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /csi
       volumes:
-        - name: mount-cache-dir
-          emptyDir: {}
-        - name: plugin-dir
+        - name: socket-dir
           hostPath:
             path: /var/lib/kubelet/plugins/cephfs.csi.ceph.com
             type: DirectoryOrCreate
-        - name: csi-plugins-dir
+        - name: plugin-dir
           hostPath:
-            path: /var/lib/kubelet/plugins/kubernetes.io/csi
+            path: /var/lib/kubelet/plugins
             type: DirectoryOrCreate
+        - name: mountpoint-dir
+          hostPath:
+            path: /var/lib/kubelet/pods
+            type: Directory
         - name: registration-dir
           hostPath:
             path: /var/lib/kubelet/plugins_registry
             type: Directory
-        - name: pods-mount-dir
+        - name: host-dev
           hostPath:
-            path: /var/lib/kubelet/pods
-            type: Directory
+            path: /dev
         - name: host-sys
           hostPath:
             path: /sys
         - name: lib-modules
           hostPath:
             path: /lib/modules
-        - name: host-dev
-          hostPath:
-            path: /dev
         - name: ceph-csi-config
           configMap:
             name: ceph-csi-config
+        - name: keys-tmp-dir
+          emptyDir:
+            medium: Memory
+        - name: mount-cache-dir
+          emptyDir: {}
