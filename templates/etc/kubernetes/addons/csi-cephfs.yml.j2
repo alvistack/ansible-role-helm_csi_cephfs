@@ -327,6 +327,10 @@ spec:
           env:
             - name: ADDRESS
               value: unix:///csi/csi-provisioner.sock
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
           volumeMounts:
             - name: socket-dir
               mountPath: /csi
@@ -340,6 +344,10 @@ spec:
           env:
             - name: ADDRESS
               value: /csi/csi-provisioner.sock
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
           volumeMounts:
             - name: socket-dir
               mountPath: /csi
@@ -499,6 +507,10 @@ spec:
               exec:
                 command: ["/bin/sh", "-c", "rm -rf /registration/cephfs.csi.ceph.com /registration/cephfs.csi.ceph.com-reg.sock"]
           env:
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
             - name: KUBE_NODE_NAME
               valueFrom:
                 fieldRef:
