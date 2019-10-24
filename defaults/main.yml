@@ -39,7 +39,7 @@ csi_node_drive_registrar_version: "v1.2.0"
 csi_node_drive_registrar_image_repository: "quay.io/k8scsi"
 
 # csi-cephfsplugin version.
-csi_cephfsplugin_version: "v1.2-canary"
+csi_cephfsplugin_version: "v1.2.1"
 
 # ImageRepository sets the container registry to pull images from.
 csi_cephfsplugin_image_repository: "quay.io/cephcsi"
