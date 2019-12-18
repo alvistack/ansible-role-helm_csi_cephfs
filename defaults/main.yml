@@ -34,7 +34,7 @@ csi_snapshotter_image_repository: "quay.io/k8scsi"
 
 # csi-resizer version.
 csi_resizer_version: "v0.3.0"
- 
+
 # ImageRepository sets the container registry to pull images from.
 csi_resizer_image_repository: "quay.io/k8scsi"
 
