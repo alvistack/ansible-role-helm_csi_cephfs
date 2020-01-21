@@ -337,6 +337,23 @@ spec:
           volumeMounts:
             - name: socket-dir
               mountPath: /csi
+        - name: csi-resizer
+          image: {{ csi_resizer_image_repository }}/csi-resizer:{{ csi_resizer_version }}
+          args:
+            - --v=5
+            - --csi-address=$(ADDRESS)
+            - --csiTimeout=150s
+            - --leader-election
+          env:
+            - name: ADDRESS
+              value: unix:///csi/csi-provisioner.sock
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /csi
         - name: csi-attacher
           image: {{ csi_attacher_image_repository }}/csi-attacher:{{ csi_attacher_version }}
           args:
@@ -430,9 +447,8 @@ spec:
           hostPath:
             path: /lib/modules
         - name: socket-dir
-          hostPath:
-            path: /var/lib/kubelet/plugins/cephfs.csi.ceph.com
-            type: DirectoryOrCreate
+          emptyDir:
+            medium: Memory
         - name: ceph-csi-config
           configMap:
             name: ceph-csi-config
@@ -494,6 +510,8 @@ spec:
       dnsPolicy: ClusterFirstWithHostNet
       containers:
         - name: driver-registrar
+          securityContext:
+            privileged: true
           image: {{ csi_node_drive_registrar_image_repository }}/csi-node-driver-registrar:{{ csi_node_drive_registrar_version }}
           args:
             - --v=5
@@ -574,6 +592,8 @@ spec:
             - name: mount-cache-dir
               mountPath: /mount-cache-dir
         - name: liveness-prometheus
+          securityContext:
+            privileged: true
           image: {{ csi_cephfsplugin_image_repository }}/cephcsi:{{ csi_cephfsplugin_version }}
           args:
             - --type=liveness
