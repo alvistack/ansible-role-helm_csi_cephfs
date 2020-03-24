@@ -387,6 +387,7 @@ spec:
             - --metricsport=8091
             - --metricspath=/metrics
             - --enablegrpcmetrics=false
+            - --forcecephkernelclient=true
             - --metadatastorage=k8s_configmap
           env:
             - name: POD_IP
@@ -576,6 +577,8 @@ spec:
               mountPath: /dev
             - name: host-sys
               mountPath: /sys
+            - name: host-mount
+              mountPath: /run/mount
             - name: lib-modules
               mountPath: /lib/modules
               readOnly: true
@@ -635,6 +638,9 @@ spec:
         - name: host-sys
           hostPath:
             path: /sys
+        - name: host-mount
+          hostPath:
+            path: /run/mount
         - name: lib-modules
           hostPath:
             path: /lib/modules
