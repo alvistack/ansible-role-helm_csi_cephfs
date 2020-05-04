@@ -33,11 +33,11 @@ metadata:
     app.kubernetes.io/name: csi-cephfs
     app.kubernetes.io/part-of: csi-cephfs
     addonmanager.kubernetes.io/mode: Reconcile
-{% if csi_cephfs_config %}
+{% if csi_cephfs_config -%}
 data:
   config.json: |
     {{ csi_cephfs_config | to_nice_json(indent=4) | indent(4) }}
-{% endif %}
+{%- endif %}
 
 ---
 apiVersion: v1
@@ -244,7 +244,7 @@ metadata:
     app.kubernetes.io/part-of: csi-cephfs
     addonmanager.kubernetes.io/mode: Reconcile
 provisioner: cephfs.csi.ceph.com
-{% if csi_cephfs_parameters %}
+{% if csi_cephfs_parameters -%}
 parameters:
   {{ csi_cephfs_parameters | to_nice_yaml(indent=2) | indent(2) }}
 {%- endif %}
