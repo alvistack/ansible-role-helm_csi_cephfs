@@ -298,10 +298,6 @@ spec:
           env:
             - name: ADDRESS
               value: unix:///csi/csi-provisioner.sock
-            - name: POD_NAMESPACE
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.namespace
           volumeMounts:
             - name: socket-dir
               mountPath: /csi
@@ -309,8 +305,8 @@ spec:
           image: k8s.gcr.io/sig-storage/csi-resizer:v1.0.1
           imagePullPolicy: IfNotPresent
           args:
-            - --v=5
             - --csi-address=$(ADDRESS)
+            - --v=5
             - --timeout=150s
             - --leader-election
             - --retry-interval-start=500ms
@@ -349,10 +345,6 @@ spec:
           env:
             - name: ADDRESS
               value: /csi/csi-provisioner.sock
-            - name: POD_NAMESPACE
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.namespace
           volumeMounts:
             - name: socket-dir
               mountPath: /csi
@@ -364,12 +356,12 @@ spec:
           image: quay.io/cephcsi/cephcsi:v3.2.2
           imagePullPolicy: IfNotPresent
           args:
-            - --v=5
-            - --type=cephfs
             - --nodeid=$(NODE_ID)
-            - --endpoint=$(CSI_ENDPOINT)
-            - --drivername=cephfs.csi.ceph.com
+            - --type=cephfs
             - --controllerserver=true
+            - --endpoint=$(CSI_ENDPOINT)
+            - --v=5
+            - --drivername=cephfs.csi.ceph.com
             - --pidlimit=-1
             - --forcecephkernelclient=true
           env:
@@ -408,12 +400,12 @@ spec:
             - --polltime=60s
             - --timeout=3s
           env:
+            - name: CSI_ENDPOINT
+              value: unix:///csi/csi-provisioner.sock
             - name: POD_IP
               valueFrom:
                 fieldRef:
                   fieldPath: status.podIP
-            - name: CSI_ENDPOINT
-              value: unix:///csi/csi-provisioner.sock
           volumeMounts:
             - name: socket-dir
               mountPath: /csi
