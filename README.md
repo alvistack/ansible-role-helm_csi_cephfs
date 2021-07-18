@@ -1,9 +1,13 @@
 # Ansible Role for CSI CephFS Driver on Kubernetes
 
-[![Gitlab pipeline status](https://img.shields.io/gitlab/pipeline/alvistack/ansible-role-kubernetes_csi_cephfs/master)](https://gitlab.com/alvistack/ansible-role-kubernetes_csi_cephfs/-/pipelines)
-[![GitHub release](https://img.shields.io/github/release/alvistack/ansible-role-kubernetes_csi_cephfs.svg)](https://github.com/alvistack/ansible-role-kubernetes_csi_cephfs/releases)
-[![GitHub license](https://img.shields.io/github/license/alvistack/ansible-role-kubernetes_csi_cephfs.svg)](https://github.com/alvistack/ansible-role-kubernetes_csi_cephfs/blob/master/LICENSE)
-[![Ansible Role](https://img.shields.io/badge/galaxy-alvistack.kubernetes_csi_cephfs-blue.svg)](https://galaxy.ansible.com/alvistack/kubernetes_csi_cephfs)
+[![Gitlab pipeline
+status](https://img.shields.io/gitlab/pipeline/alvistack/ansible-role-kubernetes_csi_cephfs/master)](https://gitlab.com/alvistack/ansible-role-kubernetes_csi_cephfs/-/pipelines)
+[![GitHub
+release](https://img.shields.io/github/release/alvistack/ansible-role-kubernetes_csi_cephfs.svg)](https://github.com/alvistack/ansible-role-kubernetes_csi_cephfs/releases)
+[![GitHub
+license](https://img.shields.io/github/license/alvistack/ansible-role-kubernetes_csi_cephfs.svg)](https://github.com/alvistack/ansible-role-kubernetes_csi_cephfs/blob/master/LICENSE)
+[![Ansible
+Role](https://img.shields.io/badge/galaxy-alvistack.kubernetes_csi_cephfs-blue.svg)](https://galaxy.ansible.com/alvistack/kubernetes_csi_cephfs)
 
 Ansible Role for CSI CephFS Driver on Kubernetes Installation.
 
@@ -39,7 +43,8 @@ This role could simply deploy to `localhost` as below:
 ## License
 
   - Code released under [Apache License 2.0](LICENSE)
-  - Docs released under [CC BY 4.0](http://creativecommons.org/licenses/by/4.0/)
+  - Docs released under [CC
+    BY 4.0](http://creativecommons.org/licenses/by/4.0/)
 
 ## Author Information
 
