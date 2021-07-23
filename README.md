@@ -1,6 +1,9 @@
 # Ansible Role for CSI CephFS Driver on Kubernetes
 
-[![Gitlab pipeline status](https://img.shields.io/gitlab/pipeline/alvistack/ansible-role-kube_csi_cephfs/master)](https://gitlab.com/alvistack/ansible-role-kube_csi_cephfs/-/pipelines) [![GitHub release](https://img.shields.io/github/release/alvistack/ansible-role-kube_csi_cephfs.svg)](https://github.com/alvistack/ansible-role-kube_csi_cephfs/releases) [![GitHub license](https://img.shields.io/github/license/alvistack/ansible-role-kube_csi_cephfs.svg)](https://github.com/alvistack/ansible-role-kube_csi_cephfs/blob/master/LICENSE) [![Ansible Role](https://img.shields.io/badge/galaxy-alvistack.kube_csi_cephfs-blue.svg)](https://galaxy.ansible.com/alvistack/kube_csi_cephfs)
+[![Gitlab pipeline status](https://img.shields.io/gitlab/pipeline/alvistack/ansible-role-kube_csi_cephfs/master)](https://gitlab.com/alvistack/ansible-role-kube_csi_cephfs/-/pipelines)
+[![GitHub release](https://img.shields.io/github/release/alvistack/ansible-role-kube_csi_cephfs.svg)](https://github.com/alvistack/ansible-role-kube_csi_cephfs/releases)
+[![GitHub license](https://img.shields.io/github/license/alvistack/ansible-role-kube_csi_cephfs.svg)](https://github.com/alvistack/ansible-role-kube_csi_cephfs/blob/master/LICENSE)
+[![Ansible Role](https://img.shields.io/badge/galaxy-alvistack.kube_csi_cephfs-blue.svg)](https://galaxy.ansible.com/alvistack/kube_csi_cephfs)
 
 Ansible Role for CSI CephFS Driver on Kubernetes Installation.
 
