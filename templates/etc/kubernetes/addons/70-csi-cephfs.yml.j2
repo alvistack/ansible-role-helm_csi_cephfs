@@ -48,10 +48,10 @@ metadata:
     app.kubernetes.io/part-of: csi-cephfs
     addonmanager.kubernetes.io/mode: Reconcile
 stringData:
-  userID: {{ csi_cephfs_admin_id }}
-  userKey: {{ csi_cephfs_admin_secret }}
-  adminID: {{ csi_cephfs_admin_id }}
-  adminKey: {{ csi_cephfs_admin_secret }}
+  userID: {{ kube_csi_cephfs_admin_id }}
+  userKey: {{ kube_csi_cephfs_admin_secret }}
+  adminID: {{ kube_csi_cephfs_admin_id }}
+  adminKey: {{ kube_csi_cephfs_admin_secret }}
 
 ---
 apiVersion: v1

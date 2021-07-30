@@ -15,7 +15,7 @@
 # limitations under the License.
 
 # Ceph monitors.
-csi_cephfs_monitors: >-
+kube_csi_cephfs_monitors: >-
   {%- set _ns = namespace() -%}
   {%- set _ns._params = [] -%}
   {%- for host in groups['ceph_mon'] -%}
@@ -24,18 +24,18 @@ csi_cephfs_monitors: >-
   {{ _ns._params | join(',') }}
 
 # Ceph admin id.
-csi_cephfs_admin_id: "admin"
+kube_csi_cephfs_admin_id: "admin"
 
 # Ceph admin secret.
-csi_cephfs_admin_secret: ~
+kube_csi_cephfs_admin_secret: ~
 
 # /etc/ceph-csi-config/config.json.
-csi_cephfs_config:
+kube_csi_cephfs_config:
   - clusterID: "ceph"
-    monitors: "{{ csi_cephfs_monitors.split(',') | select() | list() }}"
+    monitors: "{{ kube_csi_cephfs_monitors.split(',') | select() | list() }}"
 
 # StorageClass parameters.
-csi_cephfs_parameters:
+kube_csi_cephfs_parameters:
   clusterID: "ceph"
   fsName: "cephfs"
   pool: "cephfs_data"
