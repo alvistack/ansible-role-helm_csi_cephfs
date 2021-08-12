@@ -35,7 +35,7 @@ metadata:
     addonmanager.kubernetes.io/mode: Reconcile
 data:
   config.json: |
-    {{ csi_cephfs_config | to_nice_json(indent=4) | indent(4) }}
+    {{ kube_csi_cephfs_config | to_nice_json(indent=4) | indent(4) }}
 
 ---
 apiVersion: v1
@@ -48,10 +48,10 @@ metadata:
     app.kubernetes.io/part-of: csi-cephfs
     addonmanager.kubernetes.io/mode: Reconcile
 stringData:
-  userID: {{ csi_cephfs_admin_id }}
-  userKey: {{ csi_cephfs_admin_secret }}
-  adminID: {{ csi_cephfs_admin_id }}
-  adminKey: {{ csi_cephfs_admin_secret }}
+  userID: {{ kube_csi_cephfs_admin_id }}
+  userKey: {{ kube_csi_cephfs_admin_secret }}
+  adminID: {{ kube_csi_cephfs_admin_id }}
+  adminKey: {{ kube_csi_cephfs_admin_secret }}
 
 ---
 apiVersion: v1
@@ -239,7 +239,7 @@ metadata:
     addonmanager.kubernetes.io/mode: Reconcile
 provisioner: cephfs.csi.ceph.com
 parameters:
-  {{ csi_cephfs_parameters | to_nice_yaml(indent=2) | indent(2) }}
+  {{ kube_csi_cephfs_parameters | to_nice_yaml(indent=2) | indent(2) }}
 
 ---
 apiVersion: v1
@@ -300,7 +300,7 @@ spec:
       priorityClassName: system-cluster-critical
       containers:
         - name: csi-provisioner
-          image: k8s.gcr.io/sig-storage/csi-provisioner:v2.0.4
+          image: k8s.gcr.io/sig-storage/csi-provisioner:v2.2.2
           imagePullPolicy: IfNotPresent
           args:
             - --csi-address=$(ADDRESS)
@@ -317,7 +317,7 @@ spec:
             - name: socket-dir
               mountPath: /csi
         - name: csi-resizer
-          image: k8s.gcr.io/sig-storage/csi-resizer:v1.0.1
+          image: k8s.gcr.io/sig-storage/csi-resizer:v1.2.0
           imagePullPolicy: IfNotPresent
           args:
             - --csi-address=$(ADDRESS)
@@ -334,7 +334,7 @@ spec:
             - name: socket-dir
               mountPath: /csi
         - name: csi-snapshotter
-          image: k8s.gcr.io/sig-storage/csi-snapshotter:v4.0.0
+          image: k8s.gcr.io/sig-storage/csi-snapshotter:v4.1.1
           args:
             - --csi-address=$(ADDRESS)
             - --v=5
@@ -350,7 +350,7 @@ spec:
             - name: socket-dir
               mountPath: /csi
         - name: csi-attacher
-          image: k8s.gcr.io/sig-storage/csi-attacher:v3.0.2
+          image: k8s.gcr.io/sig-storage/csi-attacher:v3.2.1
           imagePullPolicy: IfNotPresent
           args:
             - --v=5
@@ -368,7 +368,7 @@ spec:
             privileged: true
             capabilities:
               add: ["SYS_ADMIN"]
-          image: quay.io/cephcsi/cephcsi:v3.3.1
+          image: quay.io/cephcsi/cephcsi:v3.4.0
           imagePullPolicy: IfNotPresent
           args:
             - --nodeid=$(NODE_ID)
@@ -378,6 +378,7 @@ spec:
             - --v=5
             - --drivername=cephfs.csi.ceph.com
             - --pidlimit=-1
+            - --enableprofiling=false
             - --forcecephkernelclient=true
           env:
             - name: POD_IP
@@ -405,7 +406,7 @@ spec:
             - name: keys-tmp-dir
               mountPath: /tmp/csi/keys
         - name: liveness-prometheus
-          image: quay.io/cephcsi/cephcsi:v3.3.1
+          image: quay.io/cephcsi/cephcsi:v3.4.0
           imagePullPolicy: IfNotPresent
           args:
             - --type=liveness
@@ -497,7 +498,7 @@ spec:
         - name: driver-registrar
           securityContext:
             privileged: true
-          image: k8s.gcr.io/sig-storage/csi-node-driver-registrar:v2.0.1
+          image: k8s.gcr.io/sig-storage/csi-node-driver-registrar:v2.2.0
           imagePullPolicy: IfNotPresent
           args:
             - --v=5
@@ -523,7 +524,7 @@ spec:
             capabilities:
               add: ["SYS_ADMIN"]
             allowPrivilegeEscalation: true
-          image: quay.io/cephcsi/cephcsi:v3.3.1
+          image: quay.io/cephcsi/cephcsi:v3.4.0
           imagePullPolicy: IfNotPresent
           args:
             - --v=5
@@ -532,6 +533,7 @@ spec:
             - --endpoint=$(CSI_ENDPOINT)
             - --drivername=cephfs.csi.ceph.com
             - --nodeserver=true
+            - --enableprofiling=false
           env:
             - name: POD_IP
               valueFrom:
@@ -568,7 +570,7 @@ spec:
         - name: liveness-prometheus
           securityContext:
             privileged: true
-          image: quay.io/cephcsi/cephcsi:v3.3.1
+          image: quay.io/cephcsi/cephcsi:v3.4.0
           imagePullPolicy: IfNotPresent
           args:
             - --type=liveness
