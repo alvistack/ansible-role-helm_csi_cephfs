@@ -260,10 +260,6 @@ metadata:
 provisioner: cephfs.csi.ceph.com
 parameters:
   {{ kube_csi_cephfs_parameters | to_nice_yaml(indent=2) | indent(2) }}
-reclaimPolicy: Delete
-allowVolumeExpansion: true
-mountOptions:
-  - debug
 
 ---
 apiVersion: v1
