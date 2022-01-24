@@ -27,6 +27,26 @@ metadata:
 apiVersion: v1
 kind: ConfigMap
 metadata:
+  name: ceph-config
+  namespace: csi-cephfs
+  labels:
+    app.kubernetes.io/name: csi-cephfs
+    app.kubernetes.io/part-of: csi-cephfs
+    addonmanager.kubernetes.io/mode: Reconcile
+data:
+  ceph.conf: |
+    [global]
+    auth_cluster_required = cephx
+    auth_service_required = cephx
+    auth_client_required = cephx
+    fuse_set_user_groups = false
+    fuse_big_writes = true
+  keyring: |
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
   name: ceph-csi-config
   namespace: csi-cephfs
   labels:
@@ -300,7 +320,7 @@ spec:
       priorityClassName: system-cluster-critical
       containers:
         - name: csi-provisioner
-          image: k8s.gcr.io/sig-storage/csi-provisioner:v2.2.2
+          image: k8s.gcr.io/sig-storage/csi-provisioner:v3.1.0
           imagePullPolicy: IfNotPresent
           args:
             - --csi-address=$(ADDRESS)
@@ -317,7 +337,7 @@ spec:
             - name: socket-dir
               mountPath: /csi
         - name: csi-resizer
-          image: k8s.gcr.io/sig-storage/csi-resizer:v1.2.0
+          image: k8s.gcr.io/sig-storage/csi-resizer:v1.3.0
           imagePullPolicy: IfNotPresent
           args:
             - --csi-address=$(ADDRESS)
@@ -334,7 +354,7 @@ spec:
             - name: socket-dir
               mountPath: /csi
         - name: csi-snapshotter
-          image: k8s.gcr.io/sig-storage/csi-snapshotter:v4.1.1
+          image: k8s.gcr.io/sig-storage/csi-snapshotter:v4.2.0
           args:
             - --csi-address=$(ADDRESS)
             - --v=5
@@ -344,13 +364,11 @@ spec:
             - name: ADDRESS
               value: unix:///csi/csi-provisioner.sock
           imagePullPolicy: IfNotPresent
-          securityContext:
-            privileged: true
           volumeMounts:
             - name: socket-dir
               mountPath: /csi
         - name: csi-attacher
-          image: k8s.gcr.io/sig-storage/csi-attacher:v3.2.1
+          image: k8s.gcr.io/sig-storage/csi-attacher:v3.4.0
           imagePullPolicy: IfNotPresent
           args:
             - --v=5
@@ -364,11 +382,7 @@ spec:
             - name: socket-dir
               mountPath: /csi
         - name: csi-cephfsplugin
-          securityContext:
-            privileged: true
-            capabilities:
-              add: ["SYS_ADMIN"]
-          image: quay.io/cephcsi/cephcsi:v3.4.0
+          image: quay.io/cephcsi/cephcsi:v3.5.1
           imagePullPolicy: IfNotPresent
           args:
             - --nodeid=$(NODE_ID)
@@ -394,19 +408,21 @@ spec:
           volumeMounts:
             - name: socket-dir
               mountPath: /csi
-            - name: host-dev
-              mountPath: /dev
             - name: host-sys
               mountPath: /sys
             - name: lib-modules
               mountPath: /lib/modules
               readOnly: true
+            - name: host-dev
+              mountPath: /dev
+            - name: ceph-config
+              mountPath: /etc/ceph
             - name: ceph-csi-config
               mountPath: /etc/ceph-csi-config
             - name: keys-tmp-dir
               mountPath: /tmp/csi/keys
         - name: liveness-prometheus
-          image: quay.io/cephcsi/cephcsi:v3.4.0
+          image: quay.io/cephcsi/cephcsi:v3.5.1
           imagePullPolicy: IfNotPresent
           args:
             - --type=liveness
@@ -426,18 +442,21 @@ spec:
             - name: socket-dir
               mountPath: /csi
       volumes:
-        - name: host-dev
-          hostPath:
-            path: /dev
+        - name: socket-dir
+          emptyDir:
+            medium: Memory
         - name: host-sys
           hostPath:
             path: /sys
         - name: lib-modules
           hostPath:
             path: /lib/modules
-        - name: socket-dir
-          emptyDir:
-            medium: Memory
+        - name: host-dev
+          hostPath:
+            path: /dev
+        - name: ceph-config
+          configMap:
+            name: ceph-config
         - name: ceph-csi-config
           configMap:
             name: ceph-csi-config
@@ -498,7 +517,7 @@ spec:
         - name: driver-registrar
           securityContext:
             privileged: true
-          image: k8s.gcr.io/sig-storage/csi-node-driver-registrar:v2.2.0
+          image: k8s.gcr.io/sig-storage/csi-node-driver-registrar:v2.4.0
           imagePullPolicy: IfNotPresent
           args:
             - --v=5
@@ -524,7 +543,7 @@ spec:
             capabilities:
               add: ["SYS_ADMIN"]
             allowPrivilegeEscalation: true
-          image: quay.io/cephcsi/cephcsi:v3.4.0
+          image: quay.io/cephcsi/cephcsi:v3.5.1
           imagePullPolicy: IfNotPresent
           args:
             - --v=5
@@ -548,21 +567,26 @@ spec:
           volumeMounts:
             - name: socket-dir
               mountPath: /csi
-            - name: host-dev
-              mountPath: /dev
-            - name: host-sys
-              mountPath: /sys
-            - name: host-mount
-              mountPath: /run/mount
-            - name: lib-modules
-              mountPath: /lib/modules
-              readOnly: true
             - name: mountpoint-dir
               mountPath: /var/lib/kubelet/pods
               mountPropagation: Bidirectional
             - name: plugin-dir
               mountPath: /var/lib/kubelet/plugins
               mountPropagation: Bidirectional
+            - name: host-sys
+              mountPath: /sys
+            - name: etc-selinux
+              mountPath: /etc/selinux
+              readOnly: true
+            - name: lib-modules
+              mountPath: /lib/modules
+              readOnly: true
+            - name: host-dev
+              mountPath: /dev
+            - name: host-mount
+              mountPath: /run/mount
+            - name: ceph-config
+              mountPath: /etc/ceph
             - name: ceph-csi-config
               mountPath: /etc/ceph-csi-config
             - name: keys-tmp-dir
@@ -570,7 +594,7 @@ spec:
         - name: liveness-prometheus
           securityContext:
             privileged: true
-          image: quay.io/cephcsi/cephcsi:v3.4.0
+          image: quay.io/cephcsi/cephcsi:v3.5.1
           imagePullPolicy: IfNotPresent
           args:
             - --type=liveness
@@ -594,30 +618,36 @@ spec:
           hostPath:
             path: /var/lib/kubelet/plugins/cephfs.csi.ceph.com
             type: DirectoryOrCreate
-        - name: plugin-dir
+        - name: registration-dir
           hostPath:
-            path: /var/lib/kubelet/plugins
+            path: /var/lib/kubelet/plugins_registry
             type: DirectoryOrCreate
         - name: mountpoint-dir
           hostPath:
             path: /var/lib/kubelet/pods
             type: DirectoryOrCreate
-        - name: registration-dir
+        - name: plugin-dir
           hostPath:
-            path: /var/lib/kubelet/plugins_registry
+            path: /var/lib/kubelet/plugins
             type: DirectoryOrCreate
-        - name: host-dev
-          hostPath:
-            path: /dev
         - name: host-sys
           hostPath:
             path: /sys
-        - name: host-mount
+        - name: etc-selinux
           hostPath:
-            path: /run/mount
+            path: /etc/selinux
         - name: lib-modules
           hostPath:
             path: /lib/modules
+        - name: host-dev
+          hostPath:
+            path: /dev
+        - name: host-mount
+          hostPath:
+            path: /run/mount
+        - name: ceph-config
+          configMap:
+            name: ceph-config
         - name: ceph-csi-config
           configMap:
             name: ceph-csi-config

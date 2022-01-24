@@ -41,6 +41,8 @@ kube_csi_cephfs_parameters:
   pool: "cephfs_data"
   csi.storage.k8s.io/provisioner-secret-name: "csi-cephfs-secret"
   csi.storage.k8s.io/provisioner-secret-namespace: "csi-cephfs"
+  csi.storage.k8s.io/controller-expand-secret-name: "csi-cephfs-secret"
+  csi.storage.k8s.io/controller-expand-secret-namespace: "csi-cephfs"
   csi.storage.k8s.io/node-stage-secret-name: "csi-cephfs-secret"
   csi.storage.k8s.io/node-stage-secret-namespace: "csi-cephfs"
   mounter: "kernel"
