@@ -95,9 +95,6 @@ metadata:
     addonmanager.kubernetes.io/mode: Reconcile
 rules:
   - apiGroups: [""]
-    resources: ["nodes"]
-    verbs: ["get", "list", "watch"]
-  - apiGroups: [""]
     resources: ["secrets"]
     verbs: ["get", "list"]
   - apiGroups: [""]
@@ -105,7 +102,7 @@ rules:
     verbs: ["list", "watch", "create", "update", "patch"]
   - apiGroups: [""]
     resources: ["persistentvolumes"]
-    verbs: ["get", "list", "watch", "create", "delete", "patch"]
+    verbs: ["get", "list", "watch", "create", "update", "delete", "patch"]
   - apiGroups: [""]
     resources: ["persistentvolumeclaims"]
     verbs: ["get", "list", "watch", "update"]
@@ -120,16 +117,10 @@ rules:
     verbs: ["get", "list", "patch"]
   - apiGroups: ["snapshot.storage.k8s.io"]
     resources: ["volumesnapshotcontents"]
-    verbs: ["create", "get", "list", "watch", "update", "delete", "patch"]
+    verbs: ["get", "list", "watch", "update", "patch"]
   - apiGroups: ["snapshot.storage.k8s.io"]
     resources: ["volumesnapshotclasses"]
     verbs: ["get", "list", "watch"]
-  - apiGroups: ["storage.k8s.io"]
-    resources: ["volumeattachments"]
-    verbs: ["get", "list", "watch", "update", "patch"]
-  - apiGroups: ["storage.k8s.io"]
-    resources: ["volumeattachments/status"]
-    verbs: ["patch"]
   - apiGroups: [""]
     resources: ["persistentvolumeclaims/status"]
     verbs: ["update", "patch"]
@@ -169,9 +160,6 @@ metadata:
     app.kubernetes.io/part-of: csi-cephfs
     addonmanager.kubernetes.io/mode: Reconcile
 rules:
-  - apiGroups: [""]
-    resources: ["configmaps"]
-    verbs: ["get", "list", "watch", "create", "delete"]
   - apiGroups: ["coordination.k8s.io"]
     resources: ["leases"]
     verbs: ["get", "watch", "list", "delete", "update", "create"]
@@ -207,38 +195,6 @@ metadata:
     addonmanager.kubernetes.io/mode: Reconcile
 
 ---
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: csi-cephfs-nodeplugin
-  labels:
-    app.kubernetes.io/name: csi-cephfs
-    app.kubernetes.io/part-of: csi-cephfs
-    addonmanager.kubernetes.io/mode: Reconcile
-rules:
-  - apiGroups: [""]
-    resources: ["nodes"]
-    verbs: ["get"]
-
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: csi-cephfs-nodeplugin
-  labels:
-    app.kubernetes.io/name: csi-cephfs
-    app.kubernetes.io/part-of: csi-cephfs
-    addonmanager.kubernetes.io/mode: EnsureExists
-subjects:
-  - kind: ServiceAccount
-    name: csi-cephfs-nodeplugin
-    namespace: csi-cephfs
-roleRef:
-  kind: ClusterRole
-  name: csi-cephfs-nodeplugin
-  apiGroup: rbac.authorization.k8s.io
-
----
 apiVersion: storage.k8s.io/v1
 kind: CSIDriver
 metadata:
@@ -248,8 +204,9 @@ metadata:
     app.kubernetes.io/part-of: csi-cephfs
     addonmanager.kubernetes.io/mode: Reconcile
 spec:
-  attachRequired: true
+  attachRequired: false
   podInfoOnMount: false
+  fsGroupPolicy: File
 
 ---
 apiVersion: storage.k8s.io/v1
@@ -323,16 +280,18 @@ spec:
       priorityClassName: system-cluster-critical
       containers:
         - name: csi-provisioner
-          image: k8s.gcr.io/sig-storage/csi-provisioner:v3.1.0
+          image: registry.k8s.io/sig-storage/csi-provisioner:v3.2.1
           imagePullPolicy: IfNotPresent
           args:
             - --csi-address=$(ADDRESS)
-            - --v=5
+            - --v=1
             - --timeout=150s
             - --leader-election=true
             - --retry-interval-start=500ms
             - --feature-gates=Topology=false
-            - --extra-create-metadata=true
+            - --feature-gates=HonorPVReclaimPolicy=true
+            - --prevent-volume-mode-conversion=true
+            - --extra-create-metadata=false
           env:
             - name: ADDRESS
               value: unix:///csi/csi-provisioner.sock
@@ -340,15 +299,16 @@ spec:
             - name: socket-dir
               mountPath: /csi
         - name: csi-resizer
-          image: k8s.gcr.io/sig-storage/csi-resizer:v1.4.0
+          image: registry.k8s.io/sig-storage/csi-resizer:v1.5.0
           imagePullPolicy: IfNotPresent
           args:
             - --csi-address=$(ADDRESS)
-            - --v=5
+            - --v=1
             - --timeout=150s
             - --leader-election
             - --retry-interval-start=500ms
             - --handle-volume-inuse-error=false
+            - --feature-gates=RecoverVolumeExpansionFailure=true
           env:
             - name: ADDRESS
               value: unix:///csi/csi-provisioner.sock
@@ -357,12 +317,13 @@ spec:
             - name: socket-dir
               mountPath: /csi
         - name: csi-snapshotter
-          image: k8s.gcr.io/sig-storage/csi-snapshotter:v5.0.1
+          image: registry.k8s.io/sig-storage/csi-snapshotter:v6.0.1
           args:
             - --csi-address=$(ADDRESS)
-            - --v=5
+            - --v=1
             - --timeout=150s
             - --leader-election=true
+            - --extra-create-metadata=false
           env:
             - name: ADDRESS
               value: unix:///csi/csi-provisioner.sock
@@ -370,22 +331,8 @@ spec:
           volumeMounts:
             - name: socket-dir
               mountPath: /csi
-        - name: csi-attacher
-          image: k8s.gcr.io/sig-storage/csi-attacher:v3.4.0
-          imagePullPolicy: IfNotPresent
-          args:
-            - --v=5
-            - --csi-address=$(ADDRESS)
-            - --leader-election=true
-            - --retry-interval-start=500ms
-          env:
-            - name: ADDRESS
-              value: /csi/csi-provisioner.sock
-          volumeMounts:
-            - name: socket-dir
-              mountPath: /csi
         - name: csi-cephfsplugin
-          image: quay.io/cephcsi/cephcsi:v3.6.2
+          image: quay.io/cephcsi/cephcsi:v3.7.1
           imagePullPolicy: IfNotPresent
           args:
             - --nodeid=$(NODE_ID)
@@ -396,6 +343,7 @@ spec:
             - --drivername=cephfs.csi.ceph.com
             - --pidlimit=-1
             - --enableprofiling=false
+            - --setmetadata=true
             - --forcecephkernelclient=true
           env:
             - name: POD_IP
@@ -427,7 +375,7 @@ spec:
             - name: ceph-csi-mountinfo
               mountPath: /csi/mountinfo
         - name: liveness-prometheus
-          image: quay.io/cephcsi/cephcsi:v3.6.2
+          image: quay.io/cephcsi/cephcsi:v3.7.1
           imagePullPolicy: IfNotPresent
           args:
             - --type=liveness
@@ -527,10 +475,10 @@ spec:
           securityContext:
             privileged: true
             allowPrivilegeEscalation: true
-          image: k8s.gcr.io/sig-storage/csi-node-driver-registrar:v2.4.0
+          image: registry.k8s.io/sig-storage/csi-node-driver-registrar:v2.5.1
           imagePullPolicy: IfNotPresent
           args:
-            - --v=5
+            - --v=1
             - --csi-address=/csi/csi.sock
             - --kubelet-registration-path=/var/lib/kubelet/plugins/cephfs.csi.ceph.com/csi.sock
           env:
@@ -553,7 +501,7 @@ spec:
             capabilities:
               add: ["SYS_ADMIN"]
             allowPrivilegeEscalation: true
-          image: quay.io/cephcsi/cephcsi:v3.6.2
+          image: quay.io/cephcsi/cephcsi:v3.7.1
           imagePullPolicy: IfNotPresent
           args:
             - --v=5
@@ -605,7 +553,7 @@ spec:
           securityContext:
             privileged: true
             allowPrivilegeEscalation: true
-          image: quay.io/cephcsi/cephcsi:v3.6.2
+          image: quay.io/cephcsi/cephcsi:v3.7.1
           imagePullPolicy: IfNotPresent
           args:
             - --type=liveness
