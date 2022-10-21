@@ -332,7 +332,7 @@ spec:
             - name: socket-dir
               mountPath: /csi
         - name: csi-cephfsplugin
-          image: quay.io/cephcsi/cephcsi:v3.7.1
+          image: quay.io/cephcsi/cephcsi:v3.7.2
           imagePullPolicy: IfNotPresent
           args:
             - --nodeid=$(NODE_ID)
@@ -375,7 +375,7 @@ spec:
             - name: ceph-csi-mountinfo
               mountPath: /csi/mountinfo
         - name: liveness-prometheus
-          image: quay.io/cephcsi/cephcsi:v3.7.1
+          image: quay.io/cephcsi/cephcsi:v3.7.2
           imagePullPolicy: IfNotPresent
           args:
             - --type=liveness
@@ -501,7 +501,7 @@ spec:
             capabilities:
               add: ["SYS_ADMIN"]
             allowPrivilegeEscalation: true
-          image: quay.io/cephcsi/cephcsi:v3.7.1
+          image: quay.io/cephcsi/cephcsi:v3.7.2
           imagePullPolicy: IfNotPresent
           args:
             - --v=5
@@ -553,7 +553,7 @@ spec:
           securityContext:
             privileged: true
             allowPrivilegeEscalation: true
-          image: quay.io/cephcsi/cephcsi:v3.7.1
+          image: quay.io/cephcsi/cephcsi:v3.7.2
           imagePullPolicy: IfNotPresent
           args:
             - --type=liveness
