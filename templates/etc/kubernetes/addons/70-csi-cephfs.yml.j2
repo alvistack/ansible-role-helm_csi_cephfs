@@ -95,8 +95,11 @@ metadata:
     addonmanager.kubernetes.io/mode: Reconcile
 rules:
   - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
     resources: ["secrets"]
-    verbs: ["get", "list"]
+    verbs: ["get", "list", "watch"]
   - apiGroups: [""]
     resources: ["events"]
     verbs: ["list", "watch", "create", "update", "patch"]
@@ -106,6 +109,9 @@ rules:
   - apiGroups: [""]
     resources: ["persistentvolumeclaims"]
     verbs: ["get", "list", "watch", "update"]
+  - apiGroups: [""]
+    resources: ["persistentvolumeclaims/status"]
+    verbs: ["update", "patch"]
   - apiGroups: ["storage.k8s.io"]
     resources: ["storageclasses"]
     verbs: ["get", "list", "watch"]
@@ -121,15 +127,21 @@ rules:
   - apiGroups: ["snapshot.storage.k8s.io"]
     resources: ["volumesnapshotclasses"]
     verbs: ["get", "list", "watch"]
-  - apiGroups: [""]
-    resources: ["persistentvolumeclaims/status"]
-    verbs: ["update", "patch"]
   - apiGroups: ["storage.k8s.io"]
     resources: ["csinodes"]
     verbs: ["get", "list", "watch"]
   - apiGroups: ["snapshot.storage.k8s.io"]
     resources: ["volumesnapshotcontents/status"]
     verbs: ["update", "patch"]
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get"]
+  - apiGroups: [""]
+    resources: ["serviceaccounts"]
+    verbs: ["get"]
+  - apiGroups: [""]
+    resources: ["serviceaccounts/token"]
+    verbs: ["create"]
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -160,6 +172,9 @@ metadata:
     app.kubernetes.io/part-of: csi-cephfs
     addonmanager.kubernetes.io/mode: Reconcile
 rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "list", "watch"]
   - apiGroups: ["coordination.k8s.io"]
     resources: ["leases"]
     verbs: ["get", "watch", "list", "delete", "update", "create"]
@@ -193,6 +208,47 @@ metadata:
     app.kubernetes.io/name: csi-cephfs
     app.kubernetes.io/part-of: csi-cephfs
     addonmanager.kubernetes.io/mode: Reconcile
+
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: csi-cephfs-nodeplugin
+  labels:
+    app.kubernetes.io/name: csi-cephfs
+    app.kubernetes.io/part-of: csi-cephfs
+    addonmanager.kubernetes.io/mode: Reconcile
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get"]
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get"]
+  - apiGroups: [""]
+    resources: ["serviceaccounts"]
+    verbs: ["get"]
+  - apiGroups: [""]
+    resources: ["serviceaccounts/token"]
+    verbs: ["create"]
+
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: csi-cephfs-nodeplugin
+  labels:
+    app.kubernetes.io/name: csi-cephfs
+    app.kubernetes.io/part-of: csi-cephfs
+    addonmanager.kubernetes.io/mode: EnsureExists
+subjects:
+  - kind: ServiceAccount
+    name: csi-cephfs-nodeplugin
+    namespace: csi-cephfs
+roleRef:
+  kind: ClusterRole
+  name: csi-cephfs-nodeplugin
+  apiGroup: rbac.authorization.k8s.io
 
 ---
 apiVersion: storage.k8s.io/v1
@@ -280,7 +336,7 @@ spec:
       priorityClassName: system-cluster-critical
       containers:
         - name: csi-provisioner
-          image: registry.k8s.io/sig-storage/csi-provisioner:v3.2.1
+          image: registry.k8s.io/sig-storage/csi-provisioner:v3.3.0
           imagePullPolicy: IfNotPresent
           args:
             - --csi-address=$(ADDRESS)
@@ -299,7 +355,7 @@ spec:
             - name: socket-dir
               mountPath: /csi
         - name: csi-resizer
-          image: registry.k8s.io/sig-storage/csi-resizer:v1.5.0
+          image: registry.k8s.io/sig-storage/csi-resizer:v1.6.0
           imagePullPolicy: IfNotPresent
           args:
             - --csi-address=$(ADDRESS)
@@ -317,7 +373,7 @@ spec:
             - name: socket-dir
               mountPath: /csi
         - name: csi-snapshotter
-          image: registry.k8s.io/sig-storage/csi-snapshotter:v6.0.1
+          image: registry.k8s.io/sig-storage/csi-snapshotter:v6.1.0
           args:
             - --csi-address=$(ADDRESS)
             - --v=1
@@ -332,7 +388,7 @@ spec:
             - name: socket-dir
               mountPath: /csi
         - name: csi-cephfsplugin
-          image: quay.io/cephcsi/cephcsi:v3.7.2
+          image: quay.io/cephcsi/cephcsi:v3.8.0
           imagePullPolicy: IfNotPresent
           args:
             - --nodeid=$(NODE_ID)
@@ -356,6 +412,10 @@ spec:
                   fieldPath: spec.nodeName
             - name: CSI_ENDPOINT
               value: unix:///csi/csi-provisioner.sock
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
           volumeMounts:
             - name: socket-dir
               mountPath: /csi
@@ -372,10 +432,8 @@ spec:
               mountPath: /etc/ceph-csi-config
             - name: keys-tmp-dir
               mountPath: /tmp/csi/keys
-            - name: ceph-csi-mountinfo
-              mountPath: /csi/mountinfo
         - name: liveness-prometheus
-          image: quay.io/cephcsi/cephcsi:v3.7.2
+          image: quay.io/cephcsi/cephcsi:v3.8.0
           imagePullPolicy: IfNotPresent
           args:
             - --type=liveness
@@ -416,10 +474,6 @@ spec:
         - name: keys-tmp-dir
           emptyDir:
             medium: Memory
-        - name: ceph-csi-mountinfo
-          hostPath:
-            path: /var/lib/kubelet/plugins/cephfs.csi.ceph.com/mountinfo
-            type: DirectoryOrCreate
 
 ---
 apiVersion: v1
@@ -475,7 +529,7 @@ spec:
           securityContext:
             privileged: true
             allowPrivilegeEscalation: true
-          image: registry.k8s.io/sig-storage/csi-node-driver-registrar:v2.5.1
+          image: registry.k8s.io/sig-storage/csi-node-driver-registrar:v2.6.2
           imagePullPolicy: IfNotPresent
           args:
             - --v=1
@@ -501,15 +555,15 @@ spec:
             capabilities:
               add: ["SYS_ADMIN"]
             allowPrivilegeEscalation: true
-          image: quay.io/cephcsi/cephcsi:v3.7.2
+          image: quay.io/cephcsi/cephcsi:v3.8.0
           imagePullPolicy: IfNotPresent
           args:
-            - --v=5
-            - --type=cephfs
             - --nodeid=$(NODE_ID)
-            - --endpoint=$(CSI_ENDPOINT)
-            - --drivername=cephfs.csi.ceph.com
+            - --type=cephfs
             - --nodeserver=true
+            - --endpoint=$(CSI_ENDPOINT)
+            - --v=5
+            - --drivername=cephfs.csi.ceph.com
             - --enableprofiling=false
           env:
             - name: POD_IP
@@ -522,6 +576,10 @@ spec:
                   fieldPath: spec.nodeName
             - name: CSI_ENDPOINT
               value: unix:///csi/csi.sock
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
           volumeMounts:
             - name: socket-dir
               mountPath: /csi
@@ -549,11 +607,13 @@ spec:
               mountPath: /etc/ceph-csi-config
             - name: keys-tmp-dir
               mountPath: /tmp/csi/keys
+            - name: ceph-csi-mountinfo
+              mountPath: /csi/mountinfo
         - name: liveness-prometheus
           securityContext:
             privileged: true
             allowPrivilegeEscalation: true
-          image: quay.io/cephcsi/cephcsi:v3.7.2
+          image: quay.io/cephcsi/cephcsi:v3.8.0
           imagePullPolicy: IfNotPresent
           args:
             - --type=liveness
@@ -563,12 +623,12 @@ spec:
             - --polltime=60s
             - --timeout=3s
           env:
+            - name: CSI_ENDPOINT
+              value: unix:///csi/csi.sock
             - name: POD_IP
               valueFrom:
                 fieldRef:
                   fieldPath: status.podIP
-            - name: CSI_ENDPOINT
-              value: unix:///csi/csi.sock
           volumeMounts:
             - name: socket-dir
               mountPath: /csi
@@ -580,7 +640,7 @@ spec:
         - name: registration-dir
           hostPath:
             path: /var/lib/kubelet/plugins_registry
-            type: DirectoryOrCreate
+            type: Directory
         - name: mountpoint-dir
           hostPath:
             path: /var/lib/kubelet/pods
@@ -588,7 +648,7 @@ spec:
         - name: plugin-dir
           hostPath:
             path: /var/lib/kubelet/plugins
-            type: DirectoryOrCreate
+            type: Directory
         - name: host-sys
           hostPath:
             path: /sys
@@ -613,3 +673,7 @@ spec:
         - name: keys-tmp-dir
           emptyDir:
             medium: Memory
+        - name: ceph-csi-mountinfo
+          hostPath:
+            path: /var/lib/kubelet/plugins/cephfs.csi.ceph.com/mountinfo
+            type: DirectoryOrCreate
