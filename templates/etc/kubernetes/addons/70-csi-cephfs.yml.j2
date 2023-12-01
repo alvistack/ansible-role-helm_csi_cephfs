@@ -220,6 +220,9 @@ metadata:
     addonmanager.kubernetes.io/mode: Reconcile
 rules:
   - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get"]
+  - apiGroups: [""]
     resources: ["secrets"]
     verbs: ["get"]
   - apiGroups: [""]
@@ -337,7 +340,7 @@ spec:
       priorityClassName: system-cluster-critical
       containers:
         - name: csi-provisioner
-          image: registry.k8s.io/sig-storage/csi-provisioner:v3.5.0
+          image: registry.k8s.io/sig-storage/csi-provisioner:v3.6.2
           imagePullPolicy: IfNotPresent
           args:
             - --csi-address=$(ADDRESS)
@@ -356,7 +359,7 @@ spec:
             - name: socket-dir
               mountPath: /csi
         - name: csi-resizer
-          image: registry.k8s.io/sig-storage/csi-resizer:v1.8.0
+          image: registry.k8s.io/sig-storage/csi-resizer:v1.9.2
           imagePullPolicy: IfNotPresent
           args:
             - --csi-address=$(ADDRESS)
@@ -374,7 +377,7 @@ spec:
             - name: socket-dir
               mountPath: /csi
         - name: csi-snapshotter
-          image: registry.k8s.io/sig-storage/csi-snapshotter:v6.2.2
+          image: registry.k8s.io/sig-storage/csi-snapshotter:v6.3.2
           args:
             - --csi-address=$(ADDRESS)
             - --v=1
@@ -389,7 +392,7 @@ spec:
             - name: socket-dir
               mountPath: /csi
         - name: csi-cephfsplugin
-          image: quay.io/cephcsi/cephcsi:v3.9.0
+          image: quay.io/cephcsi/cephcsi:v3.10.0
           imagePullPolicy: IfNotPresent
           args:
             - --nodeid=$(NODE_ID)
@@ -434,7 +437,7 @@ spec:
             - name: keys-tmp-dir
               mountPath: /tmp/csi/keys
         - name: liveness-prometheus
-          image: quay.io/cephcsi/cephcsi:v3.9.0
+          image: quay.io/cephcsi/cephcsi:v3.10.0
           imagePullPolicy: IfNotPresent
           args:
             - --type=liveness
@@ -530,7 +533,7 @@ spec:
           securityContext:
             privileged: true
             allowPrivilegeEscalation: true
-          image: registry.k8s.io/sig-storage/csi-node-driver-registrar:v2.8.0
+          image: registry.k8s.io/sig-storage/csi-node-driver-registrar:v2.9.1
           imagePullPolicy: IfNotPresent
           args:
             - --v=1
@@ -556,7 +559,7 @@ spec:
             capabilities:
               add: ["SYS_ADMIN"]
             allowPrivilegeEscalation: true
-          image: quay.io/cephcsi/cephcsi:v3.9.0
+          image: quay.io/cephcsi/cephcsi:v3.10.0
           imagePullPolicy: IfNotPresent
           args:
             - --nodeid=$(NODE_ID)
@@ -614,7 +617,7 @@ spec:
           securityContext:
             privileged: true
             allowPrivilegeEscalation: true
-          image: quay.io/cephcsi/cephcsi:v3.9.0
+          image: quay.io/cephcsi/cephcsi:v3.10.0
           imagePullPolicy: IfNotPresent
           args:
             - --type=liveness
