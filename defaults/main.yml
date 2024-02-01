@@ -14,6 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# ClusterID is used for unique identification.
+kube_csi_cephfs_cluster_id: "ceph"
+
 # Ceph monitors.
 kube_csi_cephfs_monitors: >-
   {%- set _ns = namespace() -%}
@@ -29,21 +32,34 @@ kube_csi_cephfs_admin_id: "admin"
 # Ceph admin secret.
 kube_csi_cephfs_admin_secret: ~
 
+# CephFS filesystem name into which the volume shall be created.
+kube_csi_cephfs_fs_name: "cephfs"
+
+# Ceph pool into which volume data shall be stored.
+kube_csi_cephfs_pool: "cephfs_data"
+
+# SubvolumeGroup contains the name of the SubvolumeGroup for CSI volumes
+kube_csi_cephfs_subvolume_group: "csi"
+
+# The driver can use either ceph-fuse (fuse) or ceph kernelclient
+# (kernel).
+kube_csi_cephfs_mounter: "kernel"
+
 # /etc/ceph-csi-config/config.json.
 kube_csi_cephfs_config:
-  - clusterID: "ceph"
+  - clusterID: "{{ kube_csi_cephfs_cluster_id }}"
     monitors: "{{ kube_csi_cephfs_monitors.split(',') | select() | list() }}"
 
 # StorageClass parameters.
 kube_csi_cephfs_parameters:
-  clusterID: "ceph"
-  fsName: "cephfs"
-  pool: "cephfs_data"
   csi.storage.k8s.io/provisioner-secret-name: "csi-cephfs-secret"
   csi.storage.k8s.io/provisioner-secret-namespace: "csi-cephfs"
   csi.storage.k8s.io/controller-expand-secret-name: "csi-cephfs-secret"
   csi.storage.k8s.io/controller-expand-secret-namespace: "csi-cephfs"
   csi.storage.k8s.io/node-stage-secret-name: "csi-cephfs-secret"
   csi.storage.k8s.io/node-stage-secret-namespace: "csi-cephfs"
-  mounter: "kernel"
-  cephFS.subvolumeGroup: "csi"
+  clusterID: "{{ kube_csi_cephfs_cluster_id }}"
+  fsName: "{{ kube_csi_cephfs_fs_name }}"
+  pool: "{{ kube_csi_cephfs_pool }}"
+  cephFS.subvolumeGroup: "{{ kube_csi_cephfs_subvolume_group }}"
+  mounter: "{{ kube_csi_cephfs_mounter }}"
