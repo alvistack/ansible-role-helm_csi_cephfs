@@ -477,7 +477,7 @@ spec:
       priorityClassName: system-cluster-critical
       containers:
         - name: csi-cephfsplugin
-          image: quay.io/cephcsi/cephcsi:v3.12.2
+          image: quay.io/cephcsi/cephcsi:v3.12.3
           imagePullPolicy: IfNotPresent
           args:
             - --nodeid=$(NODE_ID)
@@ -574,7 +574,7 @@ spec:
             - name: socket-dir
               mountPath: /csi
         - name: liveness-prometheus
-          image: quay.io/cephcsi/cephcsi:v3.12.2
+          image: quay.io/cephcsi/cephcsi:v3.12.3
           imagePullPolicy: IfNotPresent
           args:
             - --type=liveness
@@ -673,7 +673,7 @@ spec:
               add:
                 - SYS_ADMIN
             allowPrivilegeEscalation: true
-          image: quay.io/cephcsi/cephcsi:v3.12.2
+          image: quay.io/cephcsi/cephcsi:v3.12.3
           imagePullPolicy: IfNotPresent
           args:
             - --nodeid=$(NODE_ID)
@@ -755,7 +755,7 @@ spec:
           securityContext:
             privileged: true
             allowPrivilegeEscalation: true
-          image: quay.io/cephcsi/cephcsi:v3.12.2
+          image: quay.io/cephcsi/cephcsi:v3.12.3
           imagePullPolicy: IfNotPresent
           args:
             - --type=liveness
