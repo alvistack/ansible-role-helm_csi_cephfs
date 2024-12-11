@@ -477,7 +477,7 @@ spec:
       priorityClassName: system-cluster-critical
       containers:
         - name: csi-cephfsplugin
-          image: quay.io/cephcsi/cephcsi:v3.12.3
+          image: quay.io/cephcsi/cephcsi:v3.13.0
           imagePullPolicy: IfNotPresent
           args:
             - --nodeid=$(NODE_ID)
@@ -533,9 +533,18 @@ spec:
             - --feature-gates=HonorPVReclaimPolicy=true
             - --prevent-volume-mode-conversion=true
             - --extra-create-metadata=false
+            - --http-endpoint=$(POD_IP):8090
           env:
             - name: ADDRESS
               value: unix:///csi/csi-provisioner.sock
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+          ports:
+            - containerPort: 8090
+              name: http-endpoint
+              protocol: TCP
           volumeMounts:
             - name: socket-dir
               mountPath: /csi
@@ -550,10 +559,19 @@ spec:
             - --retry-interval-start=500ms
             - --handle-volume-inuse-error=false
             - --feature-gates=RecoverVolumeExpansionFailure=true
+            - --http-endpoint=$(POD_IP):8091
           env:
             - name: ADDRESS
               value: unix:///csi/csi-provisioner.sock
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP              
           imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8091
+              name: http-endpoint
+              protocol: TCP
           volumeMounts:
             - name: socket-dir
               mountPath: /csi
@@ -566,15 +584,24 @@ spec:
             - --leader-election=true
             - --extra-create-metadata=false
             - --enable-volume-group-snapshots=true
+            - --http-endpoint=$(POD_IP):8092
           env:
             - name: ADDRESS
               value: unix:///csi/csi-provisioner.sock
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
           imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8092
+              name: http-endpoint
+              protocol: TCP
           volumeMounts:
             - name: socket-dir
               mountPath: /csi
         - name: liveness-prometheus
-          image: quay.io/cephcsi/cephcsi:v3.12.3
+          image: quay.io/cephcsi/cephcsi:v3.13.0
           imagePullPolicy: IfNotPresent
           args:
             - --type=liveness
@@ -590,6 +617,10 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.podIP
+          ports:
+            - containerPort: 8681
+              name: http-metrics
+              protocol: TCP
           volumeMounts:
             - name: socket-dir
               mountPath: /csi
@@ -673,7 +704,7 @@ spec:
               add:
                 - SYS_ADMIN
             allowPrivilegeEscalation: true
-          image: quay.io/cephcsi/cephcsi:v3.12.3
+          image: quay.io/cephcsi/cephcsi:v3.13.0
           imagePullPolicy: IfNotPresent
           args:
             - --nodeid=$(NODE_ID)
@@ -755,7 +786,7 @@ spec:
           securityContext:
             privileged: true
             allowPrivilegeEscalation: true
-          image: quay.io/cephcsi/cephcsi:v3.12.3
+          image: quay.io/cephcsi/cephcsi:v3.13.0
           imagePullPolicy: IfNotPresent
           args:
             - --type=liveness
