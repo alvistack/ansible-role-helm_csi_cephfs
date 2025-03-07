@@ -477,7 +477,7 @@ spec:
       priorityClassName: system-cluster-critical
       containers:
         - name: csi-cephfsplugin
-          image: quay.io/cephcsi/cephcsi:v3.13.0
+          image: quay.io/cephcsi/cephcsi:v3.13.1
           imagePullPolicy: IfNotPresent
           args:
             - --nodeid=$(NODE_ID)
@@ -576,14 +576,14 @@ spec:
             - name: socket-dir
               mountPath: /csi
         - name: csi-snapshotter
-          image: registry.k8s.io/sig-storage/csi-snapshotter:v8.0.1
+          image: registry.k8s.io/sig-storage/csi-snapshotter:v8.2.0
           args:
             - --csi-address=$(ADDRESS)
             - --v=1
             - --timeout=150s
             - --leader-election=true
             - --extra-create-metadata=false
-            - --enable-volume-group-snapshots=true
+            - --feature-gates=CSIVolumeGroupSnapshot=true
             - --http-endpoint=$(POD_IP):8092
           env:
             - name: ADDRESS
@@ -601,7 +601,7 @@ spec:
             - name: socket-dir
               mountPath: /csi
         - name: liveness-prometheus
-          image: quay.io/cephcsi/cephcsi:v3.13.0
+          image: quay.io/cephcsi/cephcsi:v3.13.1
           imagePullPolicy: IfNotPresent
           args:
             - --type=liveness
@@ -704,7 +704,7 @@ spec:
               add:
                 - SYS_ADMIN
             allowPrivilegeEscalation: true
-          image: quay.io/cephcsi/cephcsi:v3.13.0
+          image: quay.io/cephcsi/cephcsi:v3.13.1
           imagePullPolicy: IfNotPresent
           args:
             - --nodeid=$(NODE_ID)
@@ -786,7 +786,7 @@ spec:
           securityContext:
             privileged: true
             allowPrivilegeEscalation: true
-          image: quay.io/cephcsi/cephcsi:v3.13.0
+          image: quay.io/cephcsi/cephcsi:v3.13.1
           imagePullPolicy: IfNotPresent
           args:
             - --type=liveness
