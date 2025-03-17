@@ -31,6 +31,7 @@ kube_csi_cephfs_admin_id: admin
 
 # Ceph admin secret.
 kube_csi_cephfs_admin_secret:
+
 # CephFS filesystem name into which the volume shall be created.
 kube_csi_cephfs_fs_name: cephfs
 
@@ -44,21 +45,51 @@ kube_csi_cephfs_subvolume_group: csi
 # (kernel).
 kube_csi_cephfs_mounter: kernel
 
-# /etc/ceph-csi-config/config.json.
-kube_csi_cephfs_config:
-  - clusterID: "{{ kube_csi_cephfs_cluster_id }}"
-    monitors: "{{ kube_csi_cephfs_monitors.split(',') | select() | list() }}"
+# Release name to manage.
+kube_csi_cephfs_helm_release_name: ceph-csi-cephfs
 
-# StorageClass parameters.
-kube_csi_cephfs_parameters:
-  csi.storage.k8s.io/provisioner-secret-name: csi-cephfs-secret
-  csi.storage.k8s.io/provisioner-secret-namespace: csi-cephfs
-  csi.storage.k8s.io/controller-expand-secret-name: csi-cephfs-secret
-  csi.storage.k8s.io/controller-expand-secret-namespace: csi-cephfs
-  csi.storage.k8s.io/node-stage-secret-name: csi-cephfs-secret
-  csi.storage.k8s.io/node-stage-secret-namespace: csi-cephfs
-  clusterID: "{{ kube_csi_cephfs_cluster_id }}"
-  fsName: "{{ kube_csi_cephfs_fs_name }}"
-  pool: "{{ kube_csi_cephfs_pool }}"
-  cephFS.subvolumeGroup: "{{ kube_csi_cephfs_subvolume_group }}"
-  mounter: "{{ kube_csi_cephfs_mounter }}"
+# Kubernetes namespace where the chart should be installed.
+kube_csi_cephfs_helm_release_namespace: ceph-csi-cephfs
+
+# Value to pass to chart.
+kube_csi_cephfs_helm_release_values:
+  rbac:
+    create: true
+    leastPrivileges: false
+  csiConfig:
+    - clusterID: "{{ kube_csi_cephfs_cluster_id }}"
+      monitors: "{{ kube_csi_cephfs_monitors.split(',') | select() | list() }}"
+      cephFS:
+        subvolumeGroup: "{{ kube_csi_cephfs_subvolume_group }}"
+  nodeplugin:
+    forcecephkernelclient: true
+  provisioner:
+    replicaCount: 1
+    provisioner:
+      args:
+        httpEndpointPort: 8090
+    resizer:
+      args:
+        httpEndpointPort: 8091
+    snapshotter:
+      args:
+        httpEndpointPort: 8092
+  storageClass:
+    create: true
+    clusterID: "{{ kube_csi_cephfs_cluster_id }}"
+    fsName: "{{ kube_csi_cephfs_fs_name }}"
+    pool: "{{ kube_csi_cephfs_pool }}"
+    mounter: "{{ kube_csi_cephfs_mounter }}"
+  secret:
+    create: true
+    adminID: "{{ kube_csi_cephfs_admin_id }}"
+    adminKey: "{{ kube_csi_cephfs_admin_secret }}"
+    userID: "{{ kube_csi_cephfs_admin_id }}"
+    userKey: "{{ kube_csi_cephfs_admin_secret }}"
+  cephconf: |
+    [global]
+    auth_cluster_required = cephx
+    auth_service_required = cephx
+    auth_client_required = cephx
+    fuse_set_user_groups = false
+    fuse_big_writes = true
