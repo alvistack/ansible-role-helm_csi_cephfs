@@ -62,18 +62,35 @@ kube_csi_cephfs_helm_release_values:
       cephFS:
         subvolumeGroup: "{{ kube_csi_cephfs_subvolume_group }}"
   nodeplugin:
+    httpMetrics:
+      containerPort: 8681
+    podSecurityContext:
+      privileged: true
+      capabilities:
+        add:
+          - SYS_ADMIN
+      allowPrivilegeEscalation: true
     forcecephkernelclient: true
   provisioner:
     replicaCount: 1
+    httpMetrics:
+      containerPort: 8681
     provisioner:
       args:
         httpEndpointPort: 8090
+    setmetadata: false
     resizer:
       args:
         httpEndpointPort: 8091
     snapshotter:
       args:
         httpEndpointPort: 8092
+    podSecurityContext:
+      privileged: true
+      capabilities:
+        add:
+          - SYS_ADMIN
+      allowPrivilegeEscalation: true
   storageClass:
     create: true
     clusterID: "{{ kube_csi_cephfs_cluster_id }}"
