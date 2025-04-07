@@ -7,7 +7,7 @@
 [![GitHub license](https://img.shields.io/github/license/alvistack/ansible-role-helm_csi_cephfs.svg)](https://github.com/alvistack/ansible-role-helm_csi_cephfs/blob/master/LICENSE)
 [![Ansible Role](https://img.shields.io/badge/galaxy-alvistack.helm_csi_cephfs-blue.svg)](https://galaxy.ansible.com/alvistack/helm_csi_cephfs)
 
-Ansible Role for CSI CephFS Driver with Helm Installation.
+Ansible Role for CSI CephFS Driver with Helm.
 
 ## Requirements
 
