@@ -112,8 +112,6 @@ helm_csi_cephfs_helm_release_values:
     fsName: "{{ helm_csi_cephfs_fs_name }}"
   secret:
     create: true
-    adminID: "{{ helm_csi_cephfs_admin_id }}"
-    adminKey: "{{ helm_csi_cephfs_admin_secret }}"
     userID: "{{ helm_csi_cephfs_admin_id }}"
     userKey: "{{ helm_csi_cephfs_admin_secret }}"
   cephconf: |
