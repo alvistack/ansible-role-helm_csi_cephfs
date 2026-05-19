@@ -66,6 +66,12 @@ helm_csi_cephfs_helm_release_values:
     fullnameOverride: csi-cephfsplugin
     httpMetrics:
       containerPort: 8681
+    registrar:
+      image:
+        repository: registry.k8s.io/sig-storage/csi-node-driver-registrar
+    plugin:
+      image:
+        repository: quay.io/cephcsi/cephcsi
     podSecurityContext:
       privileged: true
       capabilities:
@@ -79,13 +85,24 @@ helm_csi_cephfs_helm_release_values:
     httpMetrics:
       containerPort: 8681
     provisioner:
+      image:
+        repository: registry.k8s.io/sig-storage/csi-provisioner
       args:
         httpEndpointPort: 8090
     setmetadata: false
+    attacher:
+      image:
+        repository: registry.k8s.io/sig-storage/csi-attacher
+      args:
+        httpEndpointPort: 8093
     resizer:
+      image:
+        repository: registry.k8s.io/sig-storage/csi-resizer
       args:
         httpEndpointPort: 8091
     snapshotter:
+      image:
+        repository: registry.k8s.io/sig-storage/csi-snapshotter
       args:
         httpEndpointPort: 8092
     podSecurityContext:
