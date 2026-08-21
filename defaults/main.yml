@@ -72,7 +72,7 @@ helm_csi_cephfs_helm_release_values:
     plugin:
       image:
         repository: quay.io/cephcsi/cephcsi
-    podSecurityContext:
+    containerSecurityContext:
       privileged: true
       capabilities:
         add:
@@ -105,7 +105,7 @@ helm_csi_cephfs_helm_release_values:
         repository: k8s.gcr.io/sig-storage/csi-snapshotter
       args:
         httpEndpointPort: 8092
-    podSecurityContext:
+    containerSecurityContext:
       privileged: true
       capabilities:
         add:
