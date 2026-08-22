@@ -32,6 +32,12 @@ helm_csi_cephfs_admin_id: admin
 # Ceph admin secret.
 helm_csi_cephfs_admin_secret:
 
+# Ceph user id.
+helm_csi_cephfs_user_id: csi-cephfs
+
+# Ceph user secret.
+helm_csi_cephfs_user_secret:
+
 # CephFS filesystem name into which the volume shall be created.
 helm_csi_cephfs_fs_name: cephfs
 
@@ -129,8 +135,8 @@ helm_csi_cephfs_helm_release_values:
     fsName: "{{ helm_csi_cephfs_fs_name }}"
   secret:
     create: true
-    userID: "{{ helm_csi_cephfs_admin_id }}"
-    userKey: "{{ helm_csi_cephfs_admin_secret }}"
+    userID: "{{ helm_csi_cephfs_user_id }}"
+    userKey: "{{ helm_csi_cephfs_user_secret }}"
   cephconf: |
     [global]
     auth_cluster_required = cephx
